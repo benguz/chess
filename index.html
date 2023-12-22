@@ -17,32 +17,38 @@
     <input type="text" id="fenInput" placeholder="Enter FEN" size="50">
     <button id="loadFenButton">Load FEN</button>
     <div id="board" style="width: 400px"></div>
+    <button id="removePieces">Remove Pieces</button>
 
     <script>
-let turn = 0;
+let turn = "w";
+
+// function onMoveEnd (oldPos, newPos) {
+//     if (turn === "b" && oldPos !== newPos) {
+//         stockfish()
+//     }
+// }
 function onDrop (source, target, piece, newPos, oldPos, orientation) {
-    if (turn === 0) {
+    if (turn === "w") {
         if (piece.search(/b/) !== -1) {
             
             return 'snapback'
-        } else {
-            turn = 1;
-            stockfish(board.fen())
-        }
+        } 
     } else {
         if (piece.search(/^w/) !== -1) {
             return 'snapback'
-        } else {
-            turn = 0;
+        } 
+    }
+    if (target !== "offboard" && oldPos[target] !== newPos[target]) {
+        window.setTimeout(stockfish, 200)
+        turn = turn === "w" ? "b" : "w";                
 
-        }
     }
   
 }
         var config = {
   draggable: true,
   position: 'start',
-  onDrop: onDrop
+  onDrop: onDrop,
 }
 var board = Chessboard('board', config);
 
@@ -54,29 +60,57 @@ document.getElementById('loadFenButton').addEventListener('click', function() {
     
 });
 
+// var imgCache = {}
+// function cacheImages() {
+//   var pieces = ['wK', 'wQ', 'wR', 'wB', 'wN', 'wP', 'bK', 'bQ', 'bR', 'bB', 'bN', 'bP'];
+//   pieces.forEach(function(piece) {
+//     var img = new Image()
+//     img.onload = function() {
+//       imgCache[piece] = getBase64Image(img)
+//     }
+//     img.src = buildPieceImgSrc(piece)
+//   })
 
-function stockfish(fen) {
+//   function getBase64Image(img) {
+//     var canvas = document.createElement("canvas");
+//     canvas.width = img.width;
+//     canvas.height = img.height;
+//     var ctx = canvas.getContext("2d");
+//     ctx.drawImage(img, 0, 0);
+//     var dataURL = canvas.toDataURL("image/png");
+//     return dataURL;     
+//   }
+// }
 
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fen: fen })
+// function buildPieceImgSrc(piece) {
+//   if(imgCache[piece]) return imgCache[piece]
+// }
 
-    };
-    fetch('https://ai.fix.school/stockfish', options)
+// cacheImages();
+
+function stockfish() {
+
+    let modifiedFEN = board.fen() + " " + turn + " - - 5 11"
+
+    const url = `https://stockfish.online/api/stockfish.php?fen=${modifiedFEN}&depth=5&mode=bestmove`;
+    fetch(url)
     .then(response => response.json())
     .then(data => {
         // Assuming data contains the best move
-        const bestMove = data.bestMove;
+        const bestMove = data.data;
 
         if (bestMove) {
             // Assuming 'board' is your chessboard.js board instance
-            board.move(bestMove);
+            if (data.success && data.data) {
+            // Extract the best move from the response
+            const moveString = data.data.split(" ");
+            const bestMove = moveString.length >= 2 ? moveString[1] : null;
+            const formattedMove = bestMove.substring(0, 2) + '-' + bestMove.substring(2);
 
-            // If you need to update the game state or FEN, do it here
-            // e.g., game.move(bestMove) if you're using chess.js along with chessboard.js
+            board.move(formattedMove);            
+            turn = turn === "w" ? "b" : "w";                
+            }
+      
         }
     })
     .catch(error => console.error('Error fetching from Stockfish:', error));
