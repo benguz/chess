@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chess Game Viewer</title>
+    <!-- Include chessboard.js CSS -->
+    <link rel="stylesheet"
+    href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+    integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU"
+    crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="
+    https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16.min.js
+    "></script>
+</head>
+<body>
+    <input type="text" id="fenInput" placeholder="Enter FEN" size="50">
+    <button id="loadFenButton">Load FEN</button>
+    <div id="board" style="width: 400px"></div>
+
+    <script>
+let turn = 0;
+function onDrop (source, target, piece, newPos, oldPos, orientation) {
+    if (turn === 0) {
+        if (piece.search(/b/) !== -1) {
+            
+            return 'snapback'
+        } else {
+            turn = 1;
+            stockfish(board.fen())
+        }
+    } else {
+        if (piece.search(/^w/) !== -1) {
+            return 'snapback'
+        } else {
+            turn = 0;
+
+        }
+    }
+  
+}
+        var config = {
+  draggable: true,
+  position: 'start',
+  onDrop: onDrop
+}
+var board = Chessboard('board', config);
+
+document.getElementById('loadFenButton').addEventListener('click', function() {
+    var fen = document.getElementById('fenInput').value;
+    if (!fen.trim()) return;
+
+    loadPosition(fen);
+    
+});
+
+
+function stockfish(fen) {
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fen: fen })
+
+    };
+    fetch('https://ai.fix.school/stockfish', options)
+    .then(response => response.json())
+    .then(data => {
+        // Assuming data contains the best move
+        const bestMove = data.bestMove;
+
+        if (bestMove) {
+            // Assuming 'board' is your chessboard.js board instance
+            board.move(bestMove);
+
+            // If you need to update the game state or FEN, do it here
+            // e.g., game.move(bestMove) if you're using chess.js along with chessboard.js
+        }
+    })
+    .catch(error => console.error('Error fetching from Stockfish:', error));
+}
+
+function loadPosition(fen) {
+    var positionWithoutPieces = removePiecesFromFen(fen);
+    board.position(positionWithoutPieces);
+    turn = getTurnFromFEN(fen);
+}
+
+function removePiecesFromFen(fen) {
+    var parts = fen.split(' ');
+    parts[0] = parts[0].replace(/[rnbqRNBQ]/g, '1'); // Replace rooks, bishops, knights, and queens with empty squares
+    return parts.join(' ');
+}
+
+function getTurnFromFEN(fen) {
+    const parts = fen.split(' ');
+    return parts[1] === 'w' ? 0 : 1;
+}
+    </script>
+</body>
+</html>
