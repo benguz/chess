@@ -57,7 +57,6 @@ document.getElementById('loadFenButton').addEventListener('click', function() {
     if (!fen.trim()) return;
 
     loadPosition(fen);
-    
 });
 
 // var imgCache = {}
@@ -130,7 +129,7 @@ function removePiecesFromFen(fen) {
 
 function getTurnFromFEN(fen) {
     const parts = fen.split(' ');
-    return parts[1] === 'w' ? 0 : 1;
+    return parts[1];
 }
     </script>
 </body>
