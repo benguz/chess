@@ -14,10 +14,16 @@
     "></script>
 </head>
 <body>
-    <input type="text" id="fenInput" placeholder="Enter FEN" size="50">
-    <button id="loadFenButton">Load FEN</button>
-    <div id="board" style="width: 400px"></div>
-    <button id="removePieces">Remove Pieces</button>
+    <div style="width: 50%; margin: auto; margin-top: 20px; display: flex; flex-direction: column;">
+        <input type="text" id="fenInput" placeholder="Enter FEN" style="width: 500px; margin: auto; max-width: 100%;">
+        <div style="display: flex; justify-content: center; flex-direction: row;">
+            <button id="loadFenButton">Remove Pieces</button>
+            
+            <button id="removePiecesLeaveRooks">Remove Pieces, Leave Rooks</button>
+        </div>
+        <br>
+        <div id="board" style="width: 500px; max-width: 100%; margin: auto;"></div>
+    </div>
 
     <script>
 let turn = "w";
@@ -56,7 +62,14 @@ document.getElementById('loadFenButton').addEventListener('click', function() {
     var fen = document.getElementById('fenInput').value;
     if (!fen.trim()) return;
 
-    loadPosition(fen);
+    loadPosition(fen, false);
+});
+
+document.getElementById('removePiecesLeaveRooks').addEventListener('click', function() {
+    var fen = document.getElementById('fenInput').value;
+    if (!fen.trim()) return;
+
+    loadPosition(fen, true);
 });
 
 // var imgCache = {}
@@ -115,8 +128,11 @@ function stockfish() {
     .catch(error => console.error('Error fetching from Stockfish:', error));
 }
 
-function loadPosition(fen) {
+function loadPosition(fen, rooks) {
     var positionWithoutPieces = removePiecesFromFen(fen);
+    if (rooks) {
+        positionWithoutPieces = removePiecesLeaveRooks(fen)
+    } 
     board.position(positionWithoutPieces);
     turn = getTurnFromFEN(fen);
 }
@@ -124,6 +140,12 @@ function loadPosition(fen) {
 function removePiecesFromFen(fen) {
     var parts = fen.split(' ');
     parts[0] = parts[0].replace(/[rnbqRNBQ]/g, '1'); // Replace rooks, bishops, knights, and queens with empty squares
+    return parts.join(' ');
+}
+
+function removePiecesLeaveRooks(fen) {
+    var parts = fen.split(' ');
+    parts[0] = parts[0].replace(/[nbqNBQ]/g, '1'); // Replace bishops, knights, and queens with empty squares
     return parts.join(' ');
 }
 
